@@ -11,7 +11,7 @@ Type `npm install` to install.
 3. Include any additional assets with a new `copy` task in the gruntfile
 4. Type `grunt server` to begin the server / watch process.
 
-To build without watching, type ``
+To build without watching, type `grunt build`
 
 ## Notes
 
