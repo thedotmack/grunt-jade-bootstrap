@@ -33,7 +33,7 @@ module.exports = function(grunt) {
         // Don't forget to uncomment the task at the bottom of this file
         tinypng: {
             options: {
-                apiKey: 'INSERT_YOUR_API_KEY_HERE', // rogExNnK0ONyPnlJ33LQJSfaNwP15zFO
+                apiKey: 'INSERT_YOUR_API_KEY_HERE',
                 checkSigs: true,
                 sigFile: 'assets/images/file_sigs.json',
                 summarize: true,
