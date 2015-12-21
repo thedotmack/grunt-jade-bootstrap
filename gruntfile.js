@@ -4,67 +4,47 @@ module.exports = function(grunt) {
     require('matchdep').filterDev('grunt-*').forEach(grunt.loadNpmTasks);
 
 	grunt.initConfig({
-		todo: {
-			options: {
-				marks: [
-				{
-					name: "FIX",
-					pattern: /FIX/,
-					color: "red"
-				},
-				{
-					name: "TODO",
-					pattern: /TODO/,
-					color: "magenta"
-				},
-				{
-					name: "NOTE",
-					pattern: /NOTE/,
-					color: "yellow"
-				}
-				],
-			},
-			src: ['assets/less/**/*.less']
-		},
-        jshint: {
-            all: ['Gruntfile.js', 'assets/js/main.js']
-        },		
-        // To use TinyPNG, get an API key from https://tinypng.com/developers
-        // Don't forget to uncomment the task at the bottom of this file
-        tinypng: {
+        uglify: {
             options: {
-                apiKey: 'INSERT_YOUR_API_KEY_HERE',
-                checkSigs: true,
-                sigFile: 'assets/images/file_sigs.json',
-                summarize: true,
-                showProgress: true
+                mangle: true,
+                compress: true,
+                preserveComments: 'some',
+                sourceMap: false,
             },
-            compress: {
-                src: '*.png',
-                cwd: 'assets/images/',
-                dest: 'assets/images/',
-                expand: true
+            js: {
+                files: {
+                    'build/assets/js/main.min.js': ['assets/js/main.js']
+                }
             }
         },
-		uglify: {
-			options: {
-				mangle: false,
-                beautify: false, // set true for readable JS
-				compress: {
-					drop_console: false
-				}
-			},
-			js: {
-				files: {
-					'build/assets/js/main.min.js': 
-					[
-						'bower_components/jquery/dist/jquery.min.js',
-						'bower_components/bootstrap/dist/js/bootstrap.min.js',
-						'assets/js/main.js'
-					]
-				}
-			}
-		},
+        jshint: {
+            all: ['Gruntfile.js', 'assets/js/main.js']
+        },
+        less: {
+            options: {
+                sourceMap: false,
+                paths: ["build/assets/css"],
+                plugins: [
+                    new (require('less-plugin-autoprefix'))({browsers: ["last 2 versions"]}),
+                    new (require('less-plugin-clean-css'))()
+                ],                
+            },
+            css: {
+                files: {
+                    'build/assets/css/main.min.css': 'assets/less/main.less'
+                }
+            }
+        },
+        imagemin: {                                // Task
+            dynamic: {                             // Another target
+                files: [{
+                    expand: true,                  // Enable dynamic expansion
+                    cwd: 'assets/images/',         // Src matches are relative to this path
+                    src: ['**/*.{png,jpg,gif}'],   // Actual patterns to match
+                    dest: 'build/assets/images/'    // Destination path prefix
+                }]
+            }
+        },        
         jade: {
             dist: {
                 files: [{
@@ -76,32 +56,6 @@ module.exports = function(grunt) {
                 }]
             }
         },
-        less: {
-            options: {
-                compress: true,
-                yuicompress: true,
-                optimization: 2,
-                sourceMap: true,
-            },
-            style: {
-                files: {
-                    'build/assets/css/main.min.css': 'assets/less/main.less',
-                }
-            }
-        },
-		autoprefixer: {
-			options: {
-				map: true
-			},
-			// prefix the specified file
-			main: {
-				options: {
-					// Target-specific options go here.
-				},
-				src:  'build/assets/css/main.min.css',
-				dest: 'build/assets/css/main.min.css'
-			}
-		},
         copy: {
           assets: {
             files: [{
@@ -117,7 +71,7 @@ module.exports = function(grunt) {
 				files: [
 					'gruntfile.js',
 				],
-				tasks: ['todo','tinypng','copy','less:style','autoprefixer','uglify:js','jade'],
+				tasks: ['build'],
 				options: {
 					livereload: true
 				}
@@ -131,21 +85,19 @@ module.exports = function(grunt) {
             },
             css: {
                 files: [ 'assets/less/*.less' ],
-                tasks: [ 'less:style', 'autoprefixer:main' ],
-                options: {
-                    livereload: true
-                }
-            },
-            png: {
-                files: [ 'assets/images/*.png' ],
-                tasks: [ 'tinypng', 'copy' ],
+                tasks: [ 'less' ],
                 options: {
                     livereload: true
                 }
             },
             images: {
-                files: [ 'assets/images/*.jpg','assets/images/*.gif','assets/images/*.svg' ],
-                tasks: [ 'copy' ],
+                files: [ 
+                    'assets/images/*.png',
+                    'assets/images/*.jpg',
+                    'assets/images/*.gif',
+                    'assets/images/*.svg' 
+                ],
+                tasks: [ 'newer:imagemin:dynamic', 'copy' ],
                 options: {
                     livereload: true
                 }
@@ -164,9 +116,6 @@ module.exports = function(grunt) {
           }
         },
         connect: {
-            options: {
-                keepalive: true
-            },
             livereload: {
                 options: {
                     open: true,
@@ -175,28 +124,22 @@ module.exports = function(grunt) {
                     ]
                 }
             }
-        },
-        concurrent: {
-          dev: {
-            tasks: [ 'connect', 'watch' ],
-            options: {
-              logConcurrentOutput: true
-            }
-          }
-        },
+        }
    	});
 
-    // Compiles LESS/JS and checks for todos
     grunt.registerTask('default', [
-        'less',
-        'autoprefixer',
-        'jshint',
-        'uglify',
-        'todo',
-        'jade'
+        'build',
+        'connect',
+        'watch'
     ]);
 
-    grunt.registerTask( 'server', [ 'build', 'concurrent' ]);
-    grunt.registerTask( 'build', ['todo','tinypng','copy','less:style','autoprefixer','uglify:js','jade']);
+    grunt.registerTask('build', [
+        'less',
+        'jshint',
+        'uglify',
+        'newer:imagemin:dynamic',
+        'copy',
+        'jade',
+    ]);
 
 };
